@@ -23,6 +23,7 @@ export async function publish(
         title: `[${hostname()}] ${notification.title}`,
         tags: ["white_check_mark"],
         priority: 3,
+        markdown: true,
       }),
     });
   } catch {

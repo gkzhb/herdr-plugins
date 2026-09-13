@@ -17,7 +17,7 @@
 
 | 路径 | Herdr 插件 ID | 功能 |
 | --- | --- | --- |
-| [`plugins/agent-ntfy`](plugins/agent-ntfy/) | `herdr-plugins.agent-ntfy` | agent 进入 `done` 时发送 ntfy 通知，附终端标题及所属 Tab |
+| [`plugins/agent-ntfy`](plugins/agent-ntfy/) | `herdr-plugins.agent-ntfy` | agent 完成（`done` 或 `working → idle`）时发送 ntfy 通知，附终端标题、所属 Tab 和 Pi 最新回复摘要 |
 
 ## 仓库结构
 

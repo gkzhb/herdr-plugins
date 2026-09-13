@@ -2,6 +2,8 @@ import { execFile } from "node:child_process";
 import { isRecord } from "./config.ts";
 
 export interface PaneDetails {
+  session?: { kind: string; value: string };
+  summary?: string;
   terminalTitle?: string;
   tabId?: string;
   tabLabel?: string;
@@ -33,6 +35,11 @@ export async function readPaneDetails(
     if (!isRecord(response) || !isRecord(response.result)) return details;
     const pane = response.result.pane;
     if (!isRecord(pane) || pane.pane_id !== paneId) return details;
+    const session = pane.agent_session;
+    if (isRecord(session) && session.agent === "pi" && session.source === "herdr:pi" &&
+        (session.kind === "path" || session.kind === "id") && typeof session.value === "string") {
+      details.session = { kind: session.kind, value: session.value };
+    }
     if (typeof pane.terminal_title_stripped === "string" && pane.terminal_title_stripped.trim()) {
       details.terminalTitle = pane.terminal_title_stripped;
     }

@@ -16,7 +16,7 @@ test("JSON 发布带本机 hostname 前缀的中文通知、鉴权、超时信�
     assert.equal(headers.get("Authorization"), "Bearer tk_secret");
     assert.equal(headers.get("Content-Type"), "application/json");
     assert.deepEqual(JSON.parse(String(init?.body)), {
-      topic: "test", ...notification, title: `[${hostname()}] 完成`, tags: ["white_check_mark"], priority: 3,
+      topic: "test", ...notification, title: `[${hostname()}] 完成`, tags: ["white_check_mark"], priority: 3, markdown: true,
     });
     return new Response("ok");
   };

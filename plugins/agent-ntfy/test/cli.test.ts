@@ -80,6 +80,7 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
   }
   assert.equal(received[0]?.url, "/");
   assert.equal(received[0]?.method, "POST");
+  assert.equal(received[0]?.body.markdown, true);
   assert.equal(received[0]?.body.title, `[${os.hostname()}] Herdr 通知测试`);
 
   const done = await run([], { ...env,
@@ -92,6 +93,7 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
   assert.equal(doneLogs[0].message, "done notification started");
   assert.notEqual(doneLogs[0].runId, logs[0].runId);
   assert.equal(received.length, 2);
+  assert.equal(received[1]?.body.markdown, true);
   assert.equal(received[1]?.body.title, `[${os.hostname()}] codex 已完成本轮工作`);
 });
 
@@ -153,4 +155,53 @@ test("配置和事件错误日志标明阶段，不泄露敏感输入", async (t
   assert.equal(JSON.parse(eventResult.stderr.trim()).stage, "event");
   assert.equal(eventResult.stdout, "");
   assert.ok(!eventResult.stderr.includes("EVENT_SECRET"));
+});
+
+test("完成事件摘要经 CLI 发往 ntfy，空摘要不生成段落且日志不含摘要", async (t) => {
+  const received: Record<string, unknown>[] = [];
+  const { directory } = await fixture(t, (req, res) => {
+    let body = "";
+    req.setEncoding("utf8").on("data", (chunk: string) => { body += chunk; });
+    req.on("end", () => {
+      received.push(JSON.parse(body));
+      res.writeHead(200).end("{}");
+    });
+  });
+  for (const summary of ["  SUMMARY_PRIVATE\n测试通过  ", " \n ", null]) {
+    const result = await run([], {
+      HERDR_PLUGIN_CONFIG_DIR: directory,
+      HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
+      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: {
+        agent_status: "done", agent: "pi", pane_id: "w1:p1", summary,
+      } }),
+    });
+    assert.equal(result.code, 0, result.stderr);
+    assert.ok(!(result.stdout + result.stderr).includes("SUMMARY_PRIVATE"));
+  }
+  assert.equal(received.length, 3);
+  assert.equal(received[0]?.title, `[${os.hostname()}] pi 已完成本轮工作`);
+  assert.equal(received[0]?.message, "工作区：unknown\n窗格：w1:p1\n状态：done\n\n最后回复：\nSUMMARY_PRIVATE\n测试通过");
+  for (const body of received.slice(1)) {
+    assert.equal(body.message, "工作区：unknown\n窗格：w1:p1\n状态：done");
+  }
+});
+
+test("跨 Node 进程 working→idle 发送一次，done→idle 不重复", async (t) => {
+  const received: Record<string, unknown>[] = [];
+  const { directory } = await fixture(t, (req, res) => {
+    let body = "";
+    req.setEncoding("utf8").on("data", (chunk: string) => { body += chunk; });
+    req.on("end", () => { received.push(JSON.parse(body)); res.writeHead(200).end("{}"); });
+  });
+  for (const status of ["idle", "working", "idle", "done", "idle", "working", "done", "idle"]) {
+    const result = await run([], {
+      HERDR_PLUGIN_CONFIG_DIR: directory, HERDR_PLUGIN_STATE_DIR: path.join(directory, "state"),
+      HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
+      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { agent: "pi", pane_id: "w1:p1", agent_status: status } }),
+    });
+    assert.equal(result.code, 0, result.stderr);
+  }
+  assert.equal(received.length, 2);
+  assert.match(String(received[0]?.message), /状态：idle/);
+  assert.match(String(received[1]?.message), /状态：done/);
 });

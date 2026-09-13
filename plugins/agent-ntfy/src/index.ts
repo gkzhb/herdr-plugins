@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig } from "./config.ts";
 import { enrichedNotificationFromEnv, notificationFromEnv } from "./event.ts";
+import { completionDecision } from "./state.ts";
 import { publish } from "./publish.ts";
 
 const runId = randomUUID();
@@ -28,15 +29,22 @@ async function main(): Promise<void> {
   }
   const isTest = args[0] === "--test";
   stage = "event";
+  const decision = isTest ? undefined : await completionDecision(process.env);
+  if (decision && !decision.notify) {
+    if (process.env.HERDR_PLUGIN_STATE_DIR) {
+      log("info", `notification skipped: ${decision.previous} -> ${decision.status}`);
+    }
+    return;
+  }
   let notification = isTest
     ? { title: "Herdr 通知测试", message: "Herdr → ntfy 通知链路正常" }
-    : notificationFromEnv(process.env);
-  // 非完成事件无需加载配置、执行网络请求或输出日志。
+    : notificationFromEnv(process.env, {}, decision?.status === "idle");
+  // 非完成事件无需加载通知配置或访问 ntfy。
   if (!notification) return;
-  log("info", isTest ? "test notification started" : "done notification started");
+  log("info", isTest ? "test notification started" : `${decision?.status} notification started`);
   if (!isTest) {
     stage = "metadata";
-    notification = await enrichedNotificationFromEnv(process.env);
+    notification = await enrichedNotificationFromEnv(process.env, undefined, decision?.status === "idle");
     if (!notification) return;
     log("info", "notification prepared (optional metadata is best-effort)");
   }

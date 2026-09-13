@@ -46,3 +46,36 @@ test("标签清理控制字符并限制长度", () => {
   assert.ok(!notification.message.includes("\u001b"));
   assert.ok(!notification.message.includes("PRIVATE CONTENT"));
 });
+
+function withSummary(summary: unknown, status = "done"): NodeJS.ProcessEnv {
+  const value = env(status);
+  const event = JSON.parse(value.HERDR_PLUGIN_EVENT_JSON!);
+  event.data.summary = summary;
+  return { ...value, HERDR_PLUGIN_EVENT_JSON: JSON.stringify(event) };
+}
+
+test("仅追加非空字符串摘要，清理控制字符并保留换行", () => {
+  assert.equal(notificationFromEnv(withSummary("  第一行\r\n第二行\r第三行\u0000  "))?.message,
+    "工作区：项目\n窗格：w1:p1\n状态：done\n\n最后回复：\n第一行\n第二行\n第三行");
+  for (const summary of [undefined, null, "", " \t\r\n ", "\u0000\u001b\u007f", 0, 123, false, {}, [], ["内容"]]) {
+    assert.deepEqual(notificationFromEnv(withSummary(summary)), notificationFromEnv(env("done")));
+  }
+  assert.equal(notificationFromEnv(withSummary("不应发送", "working")), undefined);
+});
+
+test("摘要最多 300 个 Unicode 字符，不截断代理对", () => {
+  const summary = "你😀".repeat(200);
+  const message = notificationFromEnv(withSummary(summary))!.message;
+  assert.equal(message.split("最后回复：\n")[1], "你😀".repeat(150));
+});
+
+test("不使用 context 或事件顶层的旧摘要", () => {
+  const value = env("done");
+  const event = JSON.parse(value.HERDR_PLUGIN_EVENT_JSON!);
+  event.summary = "旧的顶层摘要";
+  assert.deepEqual(notificationFromEnv({
+    ...value,
+    HERDR_PLUGIN_EVENT_JSON: JSON.stringify(event),
+    HERDR_PLUGIN_CONTEXT_JSON: JSON.stringify({ workspace_label: "项目", summary: "旧的上下文摘要" }),
+  }), notificationFromEnv(value));
+});
