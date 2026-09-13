@@ -90,6 +90,30 @@ Tab：开发 (w1:t1)
 herdr plugin unlink herdr-plugins.agent-ntfy
 ```
 
+## 运行日志
+
+通过 Herdr 查看插件的标准输出和错误输出：
+
+```bash
+herdr plugin log list --plugin herdr-plugins.agent-ntfy
+```
+
+插件输出单行 JSON 日志，普通日志写入 stdout，失败日志写入 stderr，并返回非零退出码。每条日志包含：
+
+- `timestamp`：UTC 时间。
+- `plugin`：固定为 `agent-ntfy`。
+- `runId`：本次进程运行的唯一 ID，用于关联同一次调用的日志。
+- `level`：`info` 或 `error`。
+- `stage`：`arguments`、`event`、`metadata`、`config` 或 `publish`，标明当前处理阶段。
+- `elapsedMs`：从进程内日志计时开始累计的耗时（毫秒），不是单个阶段耗时。
+- `message`：处理结果或已脱敏的错误说明。
+
+测试通知依次记录 `test notification started`、`configuration loaded`、`ntfy publish started`、`ntfy notification sent`。真实完成通知以 `done notification started` 开始，并额外记录消息准备完成；可选的 Herdr 元数据查询失败仍会降级发送，准备完成日志不代表元数据查询成功。
+
+例如，发送被服务器拒绝时，错误日志的 `stage` 为 `publish`，`message` 为 `ntfy 发布失败：HTTP 401`。成功日志仅表示 ntfy HTTP 请求成功，不保证客户端已收到推送。
+
+非完成事件继续静默退出。日志不包含 token、topic、服务器 URL、通知标题/正文、原始事件或服务器响应正文；不另外创建日志文件。
+
 ## 实现与边界
 
 - `src/index.ts`：Herdr 事件入口与 `--test` action。

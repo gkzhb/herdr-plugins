@@ -64,6 +64,20 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
   const result = await run(["--test"], env);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /notification sent/);
+  assert.equal(result.stderr, "");
+  const logs = result.stdout.trim().split("\n").map((line) => JSON.parse(line));
+  assert.deepEqual(logs.map((entry) => entry.stage), ["event", "config", "publish", "publish"]);
+  assert.deepEqual(logs.map((entry) => entry.message), [
+    "test notification started", "configuration loaded", "ntfy publish started", "ntfy notification sent",
+  ]);
+  for (const entry of logs) {
+    assert.equal(entry.plugin, "agent-ntfy");
+    assert.equal(entry.level, "info");
+    assert.equal(entry.runId, logs[0].runId);
+    assert.match(entry.runId, /^[0-9a-f-]{36}$/);
+    assert.equal(new Date(entry.timestamp).toISOString(), entry.timestamp);
+    assert.ok(Number.isInteger(entry.elapsedMs) && entry.elapsedMs >= 0);
+  }
   assert.equal(received[0]?.url, "/");
   assert.equal(received[0]?.method, "POST");
   assert.equal(received[0]?.body.title, `[${os.hostname()}] Herdr 通知测试`);
@@ -73,13 +87,17 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
     HERDR_PLUGIN_EVENT_JSON: '{"data":{"agent_status":"done","agent":"codex","pane_id":"w1:p1"}}',
   });
   assert.equal(done.code, 0, done.stderr);
+  const doneLogs = done.stdout.trim().split("\n").map((line) => JSON.parse(line));
+  assert.deepEqual(doneLogs.map((entry) => entry.stage), ["event", "metadata", "config", "publish", "publish"]);
+  assert.equal(doneLogs[0].message, "done notification started");
+  assert.notEqual(doneLogs[0].runId, logs[0].runId);
   assert.equal(received.length, 2);
   assert.equal(received[1]?.body.title, `[${os.hostname()}] codex 已完成本轮工作`);
 });
 
 test("忽略事件无需配置；无效参数或缺少配置返回非零", async () => {
-  assert.equal((await run([])).code, 0);
-  assert.equal((await run([], { HERDR_PLUGIN_EVENT: "pane.agent_status_changed", HERDR_PLUGIN_EVENT_JSON: '{"data":{"agent_status":"blocked"}}' })).code, 0);
+  assert.deepEqual(await run([]), { code: 0, stdout: "", stderr: "" });
+  assert.deepEqual(await run([], { HERDR_PLUGIN_EVENT: "pane.agent_status_changed", HERDR_PLUGIN_EVENT_JSON: '{"data":{"agent_status":"blocked"}}' }), { code: 0, stdout: "", stderr: "" });
   assert.equal((await run(["--test"])).code, 1);
   assert.equal((await run(["--unknown"])).code, 1);
 });
@@ -90,6 +108,12 @@ test("HTTP 失败反映在 CLI 退出码中且不泄露响应", async (t) => {
   assert.equal(result.code, 1);
   assert.match(result.stderr, /HTTP 401/);
   assert.ok(!result.stderr.includes("SERVER_SECRET"));
+  const failure = JSON.parse(result.stderr.trim());
+  assert.equal(failure.level, "error");
+  assert.equal(failure.stage, "publish");
+  const logs = result.stdout.trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(failure.runId, logs[0].runId);
+  assert.ok(!result.stdout.includes("notification sent"));
 });
 
 test("重定向不会跟随", async (t) => {
@@ -109,4 +133,24 @@ test("无响应的请求会超时退出", async (t) => {
   const result = await run(["--test"], { HERDR_PLUGIN_CONFIG_DIR: directory });
   assert.equal(result.code, 1);
   assert.match(result.stderr, /超时/);
+});
+
+
+test("配置和事件错误日志标明阶段，不泄露敏感输入", async (t) => {
+  const { directory } = await fixture(t, (_req, res) => res.writeHead(200).end());
+  await writeFile(path.join(directory, "config.json"), '{"token":"TOKEN_SECRET",BROKEN');
+  const configResult = await run(["--test"], { HERDR_PLUGIN_CONFIG_DIR: directory });
+  assert.equal(configResult.code, 1);
+  assert.equal(JSON.parse(configResult.stderr.trim()).stage, "config");
+  assert.ok(!configResult.stdout.includes("ntfy publish started"));
+  assert.ok(!(configResult.stdout + configResult.stderr).includes("TOKEN_SECRET"));
+
+  const eventResult = await run([], {
+    HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
+    HERDR_PLUGIN_EVENT_JSON: '{"secret":"EVENT_SECRET",BROKEN',
+  });
+  assert.equal(eventResult.code, 1);
+  assert.equal(JSON.parse(eventResult.stderr.trim()).stage, "event");
+  assert.equal(eventResult.stdout, "");
+  assert.ok(!eventResult.stderr.includes("EVENT_SECRET"));
 });
