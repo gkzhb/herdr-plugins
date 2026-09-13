@@ -113,8 +113,8 @@ herdr plugin unlink herdr-plugins.agent-ntfy
 从 monorepo 根目录运行：
 
 ```bash
-npm ci
-npm run check
+pnpm install --frozen-lockfile
+pnpm run check
 ```
 
 测试覆盖配置校验、事件过滤、JSON 请求、鉴权、中文内容、网络异常、HTTP 错误、重定向、超时，以及真实 Node 子进程直接执行 `.ts` 的端到端本地 HTTP 测试。不向真实 ntfy topic 发送任何通知。

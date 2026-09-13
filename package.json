@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["plugins/*"],
-  "engines": { "node": ">=22.18.0" },
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "typecheck": "npm run typecheck --workspaces",
-    "test": "npm run test --workspaces",
-    "check": "npm run typecheck && npm test"
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "check": "pnpm run typecheck && pnpm test"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
     "typescript": "~5.9.3"
-  }
+  },
+  "packageManager": "pnpm@10.34.5"
 }
