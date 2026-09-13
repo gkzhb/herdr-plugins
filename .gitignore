@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+plugins/*/config.json
+
+# Keep the version pin even if a global gitignore excludes it.
+!.nvmrc

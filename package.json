@@ -1,0 +1,17 @@
+{
+  "name": "herdr-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["plugins/*"],
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "~5.9.3"
+  }
+}

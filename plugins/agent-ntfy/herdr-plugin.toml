@@ -1,0 +1,15 @@
+id = "herdr-plugins.agent-ntfy"
+name = "Agent ntfy Notify"
+version = "0.1.0"
+min_herdr_version = "0.8.0"
+description = "Send an ntfy notification when a Herdr agent finishes a turn."
+platforms = ["linux", "macos", "windows"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["node", "src/index.ts"]
+
+[[actions]]
+id = "test"
+title = "Send test ntfy notification"
+command = ["node", "src/index.ts", "--test"]
