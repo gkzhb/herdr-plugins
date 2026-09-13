@@ -71,7 +71,9 @@ herdr plugin log list --plugin herdr-plugins.agent-ntfy
 ```text
 codex 已完成本轮工作
 
+会话：π - 实现通知插件 - my-project
 工作区：my-project
+Tab：开发 (w1:t1)
 窗格：w1:p1
 状态：done
 ```
@@ -90,12 +92,17 @@ herdr plugin unlink herdr-plugins.agent-ntfy
 
 - `src/index.ts`：Herdr 事件入口与 `--test` action。
 - `src/event.ts`：完成事件过滤与消息生成。
+- `src/herdr.ts`：通过 `HERDR_BIN_PATH` 查询事件窗格的终端标题与所属 Tab。
 - `src/config.ts`：读取并验证独立配置。
 - `src/publish.ts`：POST 到 ntfy 根 URL，topic、中文标题及消息位于 JSON 正文中。
 - 非完成事件静默退出，不加载配置、不访问网络。
 - 失败返回非零退出码；错误日志不打印 token、配置原文或服务器响应正文。
 - 不跟随 HTTP 重定向，避免把凭据转发到其他地址。
-- 不获取终端输出、对话、代码或工作目录路径，但 agent/工作区名称和窗格 ID 仍属于元数据，可能敏感。
+- 使用 `pane get <事件 pane_id>` 的 `terminal_title_stripped` 作为会话显示标题，保留其完整格式（最长 120 个 Unicode 码点），不猜测或去掉 Pi 的前后缀。
+- 根据返回的 `tab_id` 调用 `tab get` 获取 Tab 名称，同时显示 Tab ID 和窗格 ID。不会查询当前聚焦窗格。
+- 每次 Herdr 查询超时 1.5 秒，最多顺序执行两次；输出上限 64 KiB。失败时保留已获取的信息，回退到事件 context 的 Tab 信息，不影响基本通知。窗格已移动时不会把旧 Tab 名称配到新 ID 上。
+- 标题和 Tab 是查询时的实时元数据，而非完成事件的历史快照；极快的窗格移动或会话切换可能导致显示查询时的新信息。
+- 不读取 Pi session 文件、对话或终端正文。但终端标题、Tab/工作区名称和相关 ID 会发往 ntfy；终端标题本身可能包含路径或其他敏感信息。
 - 公共、未受访问控制的 topic 不等于私密通道；随机 topic 不能替代访问控制。敏感用途应使用 HTTPS、受保护的 topic 和最小权限 token。
 - 无自动重试、持久队列、限流或去重；离线期间可能丢失通知，多次 `done` 转换可能产生多条通知。不保证 exactly-once 或手机实际送达。
 - HTTP 2xx 仅代表服务接受请求。客户端订阅、移动系统推送设置及自建 ntfy 的 iOS 即时推送配置需要另行确认。

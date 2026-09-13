@@ -1,5 +1,5 @@
 import { loadConfig } from "./config.ts";
-import { notificationFromEnv } from "./event.ts";
+import { enrichedNotificationFromEnv } from "./event.ts";
 import { publish } from "./publish.ts";
 
 async function main(): Promise<void> {
@@ -9,7 +9,7 @@ async function main(): Promise<void> {
   }
   const notification = args[0] === "--test"
     ? { title: "Herdr 通知测试", message: "Herdr → ntfy 通知链路正常" }
-    : notificationFromEnv(process.env);
+    : await enrichedNotificationFromEnv(process.env);
   // 非完成事件无需加载配置、执行网络请求或输出日志。
   if (!notification) return;
   const config = await loadConfig(process.env);

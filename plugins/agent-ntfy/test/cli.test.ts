@@ -29,6 +29,7 @@ async function fixture(t: TestContext, handler: (req: IncomingMessage, res: Serv
 async function run(args: string[], extra: NodeJS.ProcessEnv = {}) {
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.startsWith("HERDR_")) delete env[key];
+  env.HERDR_BIN_PATH = path.join(root, "nonexistent-herdr-test-binary");
   Object.assign(env, extra);
   const child = spawn(process.execPath, ["src/index.ts", ...args], {
     cwd: root, env, stdio: ["ignore", "pipe", "pipe"],
