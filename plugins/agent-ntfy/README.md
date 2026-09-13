@@ -64,12 +64,12 @@ herdr plugin action invoke herdr-plugins.agent-ntfy.test
 herdr plugin log list --plugin herdr-plugins.agent-ntfy
 ```
 
-测试 action 不依赖 agent 事件，直接发送一条“Herdr 通知测试”。调用 action 成功只表示命令已启动；最终投递状态应查看插件日志和客户端。
+测试 action 不依赖 agent 事件，直接发送一条“[hostname] Herdr 通知测试”。调用 action 成功只表示命令已启动；最终投递状态应查看插件日志和客户端。
 
 之后在 Herdr 中运行一个已集成的 agent，等待状态切换为 `done`。通知内容类似：
 
 ```text
-codex 已完成本轮工作
+[my-host] codex 已完成本轮工作
 
 会话：π - 实现通知插件 - my-project
 工作区：my-project
@@ -77,6 +77,8 @@ Tab：开发 (w1:t1)
 窗格：w1:p1
 状态：done
 ```
+
+所有通知（包括测试通知）的标题最前方都会添加 `[hostname] `，通过 Node.js `os.hostname()` 获取运行插件的当前机器主机名，无需配置；上例主机名为 `my-host`。
 
 如果测试正常但真实事件不触发，检查 `herdr plugin list` 中插件是否启用、Herdr 是否识别 agent、状态是否真的变成了 `done`。本插件无法补偿缺失的 agent 集成或状态事件。
 
@@ -102,7 +104,7 @@ herdr plugin unlink herdr-plugins.agent-ntfy
 - 根据返回的 `tab_id` 调用 `tab get` 获取 Tab 名称，同时显示 Tab ID 和窗格 ID。不会查询当前聚焦窗格。
 - 每次 Herdr 查询超时 1.5 秒，最多顺序执行两次；输出上限 64 KiB。失败时保留已获取的信息，回退到事件 context 的 Tab 信息，不影响基本通知。窗格已移动时不会把旧 Tab 名称配到新 ID 上。
 - 标题和 Tab 是查询时的实时元数据，而非完成事件的历史快照；极快的窗格移动或会话切换可能导致显示查询时的新信息。
-- 不读取 Pi session 文件、对话或终端正文。但终端标题、Tab/工作区名称和相关 ID 会发往 ntfy；终端标题本身可能包含路径或其他敏感信息。
+- 不读取 Pi session 文件、对话或终端正文。但机器主机名、终端标题、Tab/工作区名称和相关 ID 会发往 ntfy；终端标题本身可能包含路径或其他敏感信息。
 - 公共、未受访问控制的 topic 不等于私密通道；随机 topic 不能替代访问控制。敏感用途应使用 HTTPS、受保护的 topic 和最小权限 token。
 - 无自动重试、持久队列、限流或去重；离线期间可能丢失通知，多次 `done` 转换可能产生多条通知。不保证 exactly-once 或手机实际送达。
 - HTTP 2xx 仅代表服务接受请求。客户端订阅、移动系统推送设置及自建 ntfy 的 iOS 即时推送配置需要另行确认。

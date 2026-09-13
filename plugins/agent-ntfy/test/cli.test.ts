@@ -66,7 +66,7 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
   assert.match(result.stdout, /notification sent/);
   assert.equal(received[0]?.url, "/");
   assert.equal(received[0]?.method, "POST");
-  assert.equal(received[0]?.body.title, "Herdr 通知测试");
+  assert.equal(received[0]?.body.title, `[${os.hostname()}] Herdr 通知测试`);
 
   const done = await run([], { ...env,
     HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
@@ -74,7 +74,7 @@ test("原生 TS CLI 向本地 HTTP 服务发送测试及 done 通知", async (t)
   });
   assert.equal(done.code, 0, done.stderr);
   assert.equal(received.length, 2);
-  assert.equal(received[1]?.body.title, "codex 已完成本轮工作");
+  assert.equal(received[1]?.body.title, `[${os.hostname()}] codex 已完成本轮工作`);
 });
 
 test("忽略事件无需配置；无效参数或缺少配置返回非零", async () => {

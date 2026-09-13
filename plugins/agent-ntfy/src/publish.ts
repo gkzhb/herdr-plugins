@@ -1,3 +1,4 @@
+import { hostname } from "node:os";
 import type { Config } from "./config.ts";
 import type { Notification } from "./event.ts";
 
@@ -19,6 +20,7 @@ export async function publish(
       body: JSON.stringify({
         topic: config.topic,
         ...notification,
+        title: `[${hostname()}] ${notification.title}`,
         tags: ["white_check_mark"],
         priority: 3,
       }),
