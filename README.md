@@ -64,9 +64,29 @@ pnpm --filter @herdr-plugins/agent-ntfy test
 
 ## 使用 ntfy 插件
 
+### 从 GitHub 安装（推荐）
+
+已安装 Herdr 和 Node.js >= 22.18.0 后，可直接按仓库子目录安装，无需手动克隆仓库、安装 npm 依赖或构建：
+
 ```bash
-# 在本仓库根目录执行；无需安装依赖或构建
+herdr plugin install gkzhb/herdr-plugins/plugins/agent-ntfy
+```
+
+### 本地链接（开发调试）
+
+如果已克隆本仓库，也可以在仓库根目录执行本地链接：
+
+```bash
 herdr plugin link "$PWD/plugins/agent-ntfy"
+```
+
+上述安装方式任选一种。`$PWD` 示例适用于 Linux/macOS；Windows 可向 `plugin link` 传入插件子目录的完整路径。
+
+### 配置与验证
+
+安装后，查看插件配置目录：
+
+```bash
 herdr plugin config-dir herdr-plugins.agent-ntfy
 ```
 
@@ -77,7 +97,7 @@ herdr plugin action invoke herdr-plugins.agent-ntfy.test
 herdr plugin log list --plugin herdr-plugins.agent-ntfy
 ```
 
-详细配置、安全边界和排错见 [ntfy 插件说明](plugins/agent-ntfy/README.md)。上面的 shell 示例适用于 Linux/macOS；Windows 可向 `plugin link` 传入子目录的完整路径。
+详细配置、安全边界和排错见 [ntfy 插件说明](plugins/agent-ntfy/README.md)。
 
 ## 添加新插件
 
@@ -92,11 +112,13 @@ herdr plugin log list --plugin herdr-plugins.agent-ntfy
 
 ## 发布
 
-将 monorepo 推送到 GitHub 后，可按子目录安装（替换下面的占位符）：
+本仓库支持通过 GitHub 按子目录安装：
 
 ```bash
-herdr plugin install OWNER/REPO/plugins/agent-ntfy
+herdr plugin install gkzhb/herdr-plugins/plugins/agent-ntfy
 ```
+
+发布到其他 GitHub 仓库时，将命令中的 `gkzhb/herdr-plugins` 替换为对应的 `OWNER/REPO`。
 
 无需 npm 发布。`private: true` 防止误发布到 npm，不影响 Herdr 安装。可为 GitHub 仓库添加 `herdr-plugin` topic 以供 Herdr marketplace 索引。
 
