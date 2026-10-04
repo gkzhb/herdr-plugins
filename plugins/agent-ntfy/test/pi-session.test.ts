@@ -45,3 +45,30 @@ test("Pi JSONL 读取最新 assistant 文本，经完成通知限制为 300 字"
   assert.ok(missing);
   assert.ok(!missing.message.includes("最后回复"));
 });
+
+test("字母及多字母工作区完成通知同时包含事件窗格标题、Tab 和 Pi 回复", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "pi-letter-id-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const file = path.join(directory, "session.jsonl");
+  await writeFile(file, [entry("user", "prompt"), entry("assistant", text("本轮回复"))]
+    .map((item) => JSON.stringify(item)).join("\n") + "\n");
+  for (const workspace of ["wP", "wAA", "w1"]) {
+    const paneId = `${workspace}:p1`;
+    const tabId = `${workspace}:t2`;
+    const calls: string[][] = [];
+    const env = {
+      HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
+      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { agent: "pi", agent_status: "done", pane_id: paneId } }),
+      HERDR_PLUGIN_CONTEXT_JSON: JSON.stringify({ focused_pane_id: "wZ:p9", tab_id: "wZ:t9", tab_label: "错误 Tab" }),
+    };
+    const notification = await enrichedNotificationFromEnv(env, async (args) => {
+      calls.push(args);
+      return args[0] === "pane" ? { result: { pane: {
+        pane_id: paneId, tab_id: tabId, terminal_title_stripped: "π - 当前会话",
+        agent_session: { agent: "pi", source: "herdr:pi", kind: "path", value: file },
+      } } } : { result: { tab: { tab_id: tabId, label: "当前 Tab" } } };
+    });
+    assert.deepEqual(calls, [["pane", "get", paneId], ["tab", "get", tabId]]);
+    assert.equal(notification?.message, `会话：π - 当前会话\n工作区：unknown\nTab：当前 Tab (${tabId})\n窗格：${paneId}\n状态：done\n\n最后回复：\n本轮回复`);
+  }
+});

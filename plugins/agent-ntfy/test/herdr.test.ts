@@ -38,7 +38,7 @@ test("查询失败使用 context Tab；Tab 查询失败保留标题、新 Tab ID
 test("忽略非 done 事件/缺少 pane ID，不调用 Herdr", async () => {
   const noQuery: Query = async () => { assert.fail("must not query"); };
   assert.equal(await enrichedNotificationFromEnv({}, noQuery), undefined);
-  for (const id of [undefined, "", "--current", "w2:p2;echo secret"]) {
+  for (const id of [undefined, "", "--current", "w2:p2;echo secret", "wP:p1\n", "wP:p1;echo secret"]) {
     assert.deepEqual(await readPaneDetails(id, {}, noQuery), {});
   }
 });
@@ -51,6 +51,19 @@ test("无效或错配 pane/tab 响应不会混入其他会话数据", async () =
     ? paneResult : { result: { tab: { tab_id: "w9:t9", label: "wrong" } } });
   assert.equal(details.tabLabel, undefined);
   assert.equal(details.tabId, "w2:t3");
+});
+
+test("异常 Tab ID 不发起查询，仍保留已获取的窗格标题", async () => {
+  for (const tabId of ["wP:t1\n", "wP:t1;echo secret", "--current"]) {
+    let calls = 0;
+    const details = await readPaneDetails("wP:p1", {}, async () => {
+      calls++;
+      return { result: { pane: { pane_id: "wP:p1", tab_id: tabId, terminal_title_stripped: "当前会话" } } };
+    });
+    assert.equal(calls, 1);
+    assert.equal(details.terminalTitle, "当前会话");
+    assert.equal(details.tabId, undefined);
+  }
 });
 
 test("标题与 Tab 标签清理控制字符并截断", () => {

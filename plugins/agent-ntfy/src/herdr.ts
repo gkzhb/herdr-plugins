@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { isRecord } from "./config.ts";
+import { isPaneId, isTabId } from "./ids.ts";
 
 export interface PaneDetails {
   session?: { kind: string; value: string };
@@ -28,7 +29,7 @@ export async function readPaneDetails(
   env: NodeJS.ProcessEnv,
   query: Query = queryHerdr,
 ): Promise<PaneDetails> {
-  if (typeof paneId !== "string" || !/^w\d+:p\d+$/.test(paneId)) return {};
+  if (!isPaneId(paneId)) return {};
   const details: PaneDetails = {};
   try {
     const response = await query(["pane", "get", paneId], env);
@@ -43,7 +44,7 @@ export async function readPaneDetails(
     if (typeof pane.terminal_title_stripped === "string" && pane.terminal_title_stripped.trim()) {
       details.terminalTitle = pane.terminal_title_stripped;
     }
-    if (typeof pane.tab_id !== "string" || !/^w\d+:t\d+$/.test(pane.tab_id)) return details;
+    if (!isTabId(pane.tab_id)) return details;
     details.tabId = pane.tab_id;
     const tabResponse = await query(["tab", "get", pane.tab_id], env);
     if (!isRecord(tabResponse) || !isRecord(tabResponse.result)) return details;

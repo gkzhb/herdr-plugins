@@ -4,6 +4,7 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { isRecord } from "./config.ts";
 import { eventDataFromEnv } from "./event.ts";
+import { isPaneId } from "./ids.ts";
 
 export interface Decision {
   notify: boolean;
@@ -18,7 +19,7 @@ export async function completionDecision(env: NodeJS.ProcessEnv): Promise<Decisi
     ["working", "idle", "done", "blocked", "unknown"].includes(data.agent_status)
     ? data.agent_status : "unknown";
   const fallback = { notify: status === "done", status, previous: "unknown" };
-  if (!data || typeof data.pane_id !== "string" || !/^w\d+:p\d+$/.test(data.pane_id) ||
+  if (!data || !isPaneId(data.pane_id) ||
       !env.HERDR_PLUGIN_STATE_DIR) return fallback;
   const directory = path.join(env.HERDR_PLUGIN_STATE_DIR, "transitions");
   const key = createHash("sha256").update(JSON.stringify([

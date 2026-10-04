@@ -137,6 +137,7 @@ herdr plugin log list --plugin herdr-plugins.agent-ntfy
 - `src/index.ts`：Herdr 事件入口与 `--test` action。
 - `src/event.ts`：完成事件过滤与消息生成。
 - `src/herdr.ts`：通过 `HERDR_BIN_PATH` 查询事件窗格的终端标题与所属 Tab。
+- `src/ids.ts`：元数据查询和状态记录共用 ID 校验，兼容字母工作区（如 `wP:p1`、`wAA:t1`）与旧数字工作区（如 `w1:p1`），拒绝参数和控制字符。
 - `src/config.ts`：读取并验证独立配置。
 - `src/publish.ts`：POST 到 ntfy 根 URL，topic、中文标题及消息位于 JSON 正文中。所有通知（包括测试通知）均设置 `markdown: true`，请求客户端按 Markdown 渲染正文；实际呈现取决于 ntfy 客户端支持。
 - 非完成事件只更新状态记录，不加载通知配置、不访问 ntfy。
@@ -161,4 +162,4 @@ pnpm install --frozen-lockfile
 pnpm run check
 ```
 
-测试覆盖配置校验、事件过滤、JSON 请求、鉴权、中文内容、网络异常、HTTP 错误、重定向、超时，以及真实 Node 子进程直接执行 `.ts` 的端到端本地 HTTP 测试。不向真实 ntfy topic 发送任何通知。
+测试覆盖配置校验、事件过滤、字母/数字工作区 ID、会话标题与 Pi 最后回复读取、完成转换去重、JSON 请求、鉴权、中文内容、网络异常、HTTP 错误、重定向、超时，以及真实 Node 子进程直接执行 `.ts` 的端到端本地 HTTP 测试。不向真实 ntfy topic 发送任何通知。

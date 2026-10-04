@@ -197,7 +197,7 @@ test("跨 Node 进程 working→idle 发送一次，done→idle 不重复", asyn
     const result = await run([], {
       HERDR_PLUGIN_CONFIG_DIR: directory, HERDR_PLUGIN_STATE_DIR: path.join(directory, "state"),
       HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
-      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { agent: "pi", pane_id: "w1:p1", agent_status: status } }),
+      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { agent: "pi", pane_id: "wP:p1", agent_status: status } }),
     });
     assert.equal(result.code, 0, result.stderr);
   }
