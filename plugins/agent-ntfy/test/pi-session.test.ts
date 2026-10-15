@@ -46,15 +46,17 @@ test("Pi JSONL 读取最新 assistant 文本，经完成通知限制为 300 字"
   assert.ok(!missing.message.includes("最后回复"));
 });
 
-test("字母及多字母工作区完成通知同时包含事件窗格标题、Tab 和 Pi 回复", async (t) => {
+test("字母数字工作区、窗格和 Tab 完成通知包含事件窗格标题、Tab 和 Pi 回复", async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "pi-letter-id-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const file = path.join(directory, "session.jsonl");
   await writeFile(file, [entry("user", "prompt"), entry("assistant", text("本轮回复"))]
     .map((item) => JSON.stringify(item)).join("\n") + "\n");
-  for (const workspace of ["wP", "wAA", "w1"]) {
-    const paneId = `${workspace}:p1`;
-    const tabId = `${workspace}:t2`;
+  for (const [paneId, tabId] of [
+    ["wP:p1", "wP:t2"], ["wAA:p1", "wAA:t2"], ["w1:p1", "w1:t2"],
+    ["wQ:pS", "wQ:tP"], ["wQ:p1", "wQ:tP"], ["wAA:pAB", "wAA:tCD"],
+    ["wA1:pa2", "wA1:tb3"],
+  ] as const) {
     const calls: string[][] = [];
     const env = {
       HERDR_PLUGIN_EVENT: "pane.agent_status_changed",

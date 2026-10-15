@@ -26,7 +26,7 @@ test("跨调用识别 working→idle/done，查看完成 Tab 不重复发送", a
   assert.equal(concurrent.filter((result) => result.notify).length, 1);
 });
 
-test("字母工作区记录转换、隔离窗格，并去重并发 idle/done", async (t) => {
+test("字母数字工作区及窗格记录转换、隔离窗格，并去重并发 idle/done", async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "ntfy-letter-state-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const env = (status: string, pane: string) => ({
@@ -34,13 +34,19 @@ test("字母工作区记录转换、隔离窗格，并去重并发 idle/done", a
     HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
     HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { pane_id: pane, agent: "pi", agent_status: status } }),
   });
-  for (const pane of ["wP:p1", "wAA:p1"]) {
+  for (const pane of ["wP:p1", "wAA:p1", "wQ:pS", "wAA:pAB", "wA1:pa2"]) {
     assert.equal((await completionDecision(env("working", pane))).notify, false);
-    assert.equal((await completionDecision(env("idle", `${pane.slice(0, -1)}2`))).notify, false);
+    assert.equal((await completionDecision(env("idle", `${pane}2`))).notify, false);
     const concurrent = await Promise.all(["idle", "done"].map((status) => completionDecision(env(status, pane))));
     assert.equal(concurrent.filter((result) => result.notify).length, 1);
     assert.ok(concurrent.some((result) => result.previous === "working"));
     assert.equal((await completionDecision(env("idle", pane))).notify, false);
+    assert.equal((await completionDecision(env("done", pane))).notify, false);
+    await completionDecision(env("working", pane));
+    assert.deepEqual(await completionDecision(env("idle", pane)), { status: "idle", previous: "working", notify: true });
+    assert.equal((await completionDecision(env("done", pane))).notify, false);
+    await completionDecision(env("working", pane));
+    assert.equal((await completionDecision(env("done", pane))).notify, true);
     assert.equal((await completionDecision(env("done", pane))).notify, false);
   }
 });
