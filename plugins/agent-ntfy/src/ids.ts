@@ -1,4 +1,5 @@
-// Herdr workspace, pane and tab tokens may contain letters or digits (wQ:pS, wAA:tAB, w1:p1).
+// Herdr IDs use w/p/t prefixes with one or more alphanumeric characters.
+// Keep legacy short IDs (w1:p1) and mixed tokens (wA1B2:pA1) valid.
 // Match the entire value: RegExp's $ alone also accepts a trailing newline.
 function matchesId(value: unknown, pattern: RegExp): value is string {
   return typeof value === "string" && value.match(pattern)?.[0] === value;

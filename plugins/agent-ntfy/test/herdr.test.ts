@@ -22,6 +22,22 @@ test("查询事件窗格及其所属 Tab，不读取会话文件/终端正文", 
   assert.equal(notification?.message, "会话：π - 当前会话\n工作区：项目\nTab：通知开发 (w2:t3)\n窗格：w2:p2\n状态：done");
 });
 
+test("字母数字窗格和 Tab ID 可查询元数据，包括冒号后三位组合", async () => {
+  for (const [paneId, tabId] of [["wA1B2:pA1", "wA1B2:t1A"], ["w1a:p1B", "w1a:tb2"]]) {
+    const calls: string[][] = [];
+    const details = await readPaneDetails(paneId, {}, async (args) => {
+      calls.push(args);
+      return args[0] === "pane"
+        ? { result: { pane: { pane_id: paneId, tab_id: tabId, terminal_title_stripped: "当前会话" } } }
+        : { result: { tab: { tab_id: tabId, label: "当前 Tab" } } };
+    });
+    assert.deepEqual(calls, [["pane", "get", paneId], ["tab", "get", tabId]]);
+    assert.equal(details.terminalTitle, "当前会话");
+    assert.equal(details.tabId, tabId);
+    assert.equal(details.tabLabel, "当前 Tab");
+  }
+});
+
 test("查询失败使用 context Tab；Tab 查询失败保留标题、新 Tab ID，不混用旧名称", async () => {
   const failed: Query = async () => { throw new Error("private details"); };
   const fallback = await enrichedNotificationFromEnv(env, failed);

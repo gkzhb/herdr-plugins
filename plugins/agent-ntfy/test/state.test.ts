@@ -34,7 +34,7 @@ test("字母数字工作区及窗格记录转换、隔离窗格，并去重并�
     HERDR_PLUGIN_EVENT: "pane.agent_status_changed",
     HERDR_PLUGIN_EVENT_JSON: JSON.stringify({ data: { pane_id: pane, agent: "pi", agent_status: status } }),
   });
-  for (const pane of ["wP:p1", "wAA:p1", "wQ:pS", "wAA:pAB", "wA1:pa2"]) {
+  for (const pane of ["wP:p1", "wAA:p1", "wQ:pS", "wAA:pAB", "wA1:pa2", "wA1B2:pA1", "w1a:p1B"]) {
     assert.equal((await completionDecision(env("working", pane))).notify, false);
     assert.equal((await completionDecision(env("idle", `${pane}2`))).notify, false);
     const concurrent = await Promise.all(["idle", "done"].map((status) => completionDecision(env(status, pane))));
