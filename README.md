@@ -1,6 +1,6 @@
 # herdr-plugins
 
-使用 **pnpm workspaces** 管理的 Herdr 插件 monorepo。每个 `plugins/*` 子目录都是可单独链接或通过 GitHub 安装的插件。
+使用 **pnpm workspaces** 管理的 Herdr 插件与独立 Pi 包 monorepo。`plugins/*` 是可单独链接或通过 GitHub 安装的 Herdr 插件；`packages/*` 是独立发布的 Pi 包。
 
 ## 技术约定
 
@@ -19,15 +19,25 @@
 | --- | --- | --- |
 | [`plugins/agent-ntfy`](plugins/agent-ntfy/) | `herdr-plugins.agent-ntfy` | agent 完成（`done` 或 `working → idle`）时发送 ntfy 通知，附终端标题、所属 Tab 和 Pi 最新回复摘要 |
 
+## Pi 包
+
+| 路径 | npm 包名 | 功能 |
+| --- | --- | --- |
+| [`packages/pi-ntfy`](packages/pi-ntfy/) | `@gkzhb/pi-ntfy` | 人工 TUI 本轮完成时通知 ntfy，过滤 Shepherdr worker；配置读取 `~/.pi/agent/ntfy.json` |
+
+本地试用：`pi -e ./packages/pi-ntfy`。安装、配置、主子判断边界及发布方式见包内 README；不需要安装 Herdr 插件。
+
 ## 仓库结构
 
 ```text
 .
 ├── .github/workflows/ci.yml  # Node 22.18 / 24，Linux / macOS / Windows
 ├── package.json             # 私有 workspace 根包
-├── pnpm-workspace.yaml      # plugins/* 工作区
+├── pnpm-workspace.yaml      # plugins/* 与 packages/* 工作区
 ├── pnpm-lock.yaml
 ├── tsconfig.base.json       # 严格检查，禁止生成 JS
+├── packages/
+│   └── pi-ntfy/              # 独立 Pi 包，无 Herdr manifest
 └── plugins/
     └── agent-ntfy/
         ├── herdr-plugin.toml
@@ -120,7 +130,7 @@ herdr plugin install gkzhb/herdr-plugins/plugins/agent-ntfy
 
 发布到其他 GitHub 仓库时，将命令中的 `gkzhb/herdr-plugins` 替换为对应的 `OWNER/REPO`。
 
-无需 npm 发布。`private: true` 防止误发布到 npm，不影响 Herdr 安装。可为 GitHub 仓库添加 `herdr-plugin` topic 以供 Herdr marketplace 索引。
+Herdr 插件无需 npm 发布。根包及旧插件的 `private: true` 防止误发布到 npm，不影响 Herdr 安装。独立 Pi 包可分别发布到 npm，按其包内 README 操作。可为 GitHub 仓库添加 `herdr-plugin` topic 以供 Herdr marketplace 索引。
 
 ## 参考
 

@@ -1,0 +1,39 @@
+{
+  "name": "@gkzhb/pi-ntfy",
+  "version": "0.1.0",
+  "description": "Private-by-default ntfy completion notifications for human Pi TUI sessions.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "keywords": [
+    "pi-package",
+    "ntfy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gkzhb/herdr-plugins.git",
+    "directory": "packages/pi-ntfy"
+  },
+  "files": [
+    "src/",
+    "README.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
