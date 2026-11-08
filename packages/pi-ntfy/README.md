@@ -42,18 +42,21 @@ pi -e ./packages/pi-ntfy
 
 设置 `PI_CODING_AGENT_DIR` 时，改读该隔离 agent 目录下的 `ntfy.json`，与 Pi 自己的配置隔离方式一致。每次通知重新读取文件，修改立即生效。缺失配置时静默禁用。无效配置或投递失败仅在 TUI 显示固定、不含服务详情的 warning，连续失败不会刷屏；成功后重置 warning。
 
-在订阅端订阅对应 topic，在人工主 TUI 中发送一个普通请求并等待结束。正文以“Pi 本轮已结束，等待输入。”开头，标题为“Pi 已完成”。仅追加下述身份元信息，不发送对话文本、工具结果、工作目录或主机名。中文 title 放在 UTF-8 JSON 中，避免 HTTP header 编码问题；priority 为 3，tags 为 `white_check_mark`。POST 至服务根地址；禁止自动跟随重定向，避免凭据转发。
+在订阅端订阅对应 topic，在人工主 TUI 中发送一个普通请求并等待结束。格式与本仓库 Herdr ntfy 插件对齐：标题为 `[主机名] pi 已完成本轮工作`，正文含会话位置、`状态：done` 及最多 300 个 Unicode 字符的“最后回复”摘要。摘要只取本轮最后一条正常停止的 assistant 文字，保留换行、清理控制字符，不读取其他会话或终端正文。中文 title 放在 UTF-8 JSON 中，避免 HTTP header 编码问题；priority 为 3，tags 为 `white_check_mark`，`markdown: true`。POST 至服务根地址；禁止自动跟随重定向，避免凭据转发。
+
+**内容边界改变：启用通知即允许将主机名、终端标签和最后回复的前 300 字符发送到配置的 ntfy 服务。** 摘要可能包含敏感信息，请使用可信服务与私有 topic。不发送完整历史、思考过程、工具调用或工具结果，也不发送 session 文件路径。
 
 ## 通知元信息
 
 元信息放在 ntfy 支持的 `message` 文本内，每项一行，不添加自定义 ntfy JSON 字段：
 
-- `Pi session`：当前 `ctx.sessionManager.getSessionId()` 的原生 Pi 会话 ID，完整保留便于区分多个 Pi / resume；不是 session 文件路径。
-- `Terminal pane`：当前进程 `HERDR_PANE_ID`，仅接受合法窗格 ID。
-- `tuios session`：当前进程 `TUIOS_SESSION` 名称，与 Pi session 不同。
-- `Terminal title`：通过 Herdr 兼容 CLI 查询**当前窗格**的标题；`Terminal tab`：该窗格当前 Tab ID 与可用的 label（tuios 中对应 workspace）。不使用聚焦窗格，不枚举其他会话，忽略可能因窗格移动而过时的 `HERDR_TAB_ID`。
+- `会话`：`tuios get-window <当前 UUID> --session <当前会话> --json` 返回的 `display_name` 或 `title`。
+- `tuios 会话`：当前进程 `TUIOS_SESSION`，与 Pi 会话不同。
+- `tuios 工作区`：当前窗格实际所属的数字工作区及可用名称；名称通过 `tuios list-workspaces` 获取，不使用当前聚焦的工作区。
+- `tuios 窗格`：当前进程 `TUIOS_PANE_ID` 的原生 UUID，不使用 Herdr 的兼容地址或 Tab。
+- `Pi 会话`：当前 `ctx.sessionManager.getSessionId()`，完整保留便于区分多个 Pi / resume；不是文件路径。
 
-使用 tuios 当前支持的 Herdr 兼容 `pane get` / `tab get`（`HERDR_BIN_PATH`，缺省 `herdr`），每次查询最多 750ms、32KiB 输出，不经过 shell。无 tuios/Herdr、CLI 失败、拒绝读取或不匹配 ID 时省略相关信息，仍通知；无终端环境时仅有 Pi session。标题和 label 去控制字符并截断为 120 字符，但可能包含用户自定的敏感文本：启用即允许将这些标签发往所配置的 ntfy topic，勿在终端标题/标签中放凭据或秘密。不会读取任何 pane 对话/agent summary/session 文件，也不会发送整个环境或 CLI 响应。
+只调用原生 `tuios` CLI，不读取 `HERDR_*` 字段或调用 Herdr 兼容接口。每次查询最多 750ms、32KiB 输出，不经过 shell。CLI 不存在、查询失败、拒绝读取或返回不匹配 UUID 时省略可选信息，仍通知；无 tuios 环境时保留 Pi 会话、状态和摘要。工作区列表仅用于匹配当前窗格的工作区名称，不采集其他窗格信息。标题与标签去终端转义、控制字符并截断为 120 字符，不发送完整 CLI 响应或整个环境。
 
 ## 哪些会话会通知
 

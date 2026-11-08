@@ -1,3 +1,4 @@
+import { hostname } from "node:os";
 import type { Config } from "./config.ts";
 
 export async function publish(config: Config, details: string[] = []): Promise<void> {
@@ -12,10 +13,11 @@ export async function publish(config: Config, details: string[] = []): Promise<v
       signal: AbortSignal.timeout(config.timeoutMs),
       body: JSON.stringify({
         topic: config.topic,
-        title: "Pi 已完成",
-        message: ["Pi 本轮已结束，等待输入。", ...details].join("\n"),
+        title: `[${hostname()}] pi 已完成本轮工作`,
+        message: details.join("\n"),
         tags: ["white_check_mark"],
         priority: 3,
+        markdown: true,
       }),
     });
   } catch {
