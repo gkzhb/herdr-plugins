@@ -14,6 +14,9 @@ function isWorker(pi: ExtensionAPI, ctx: ExtensionContext): boolean {
 }
 
 export default function ntfy(pi: ExtensionAPI): void {
+  // Botmux sends notifications through Feishu instead.
+  if (process.env.BOTMUX !== undefined) return;
+
   let outcome: "completed" | "aborted" | "error" | undefined;
   let finalSummary: string | undefined;
   let warned = false;

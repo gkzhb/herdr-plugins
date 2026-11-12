@@ -1,6 +1,6 @@
 {
   "name": "@gkzhb/pi-ntfy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ntfy completion notifications with reply summaries and tuios metadata for human Pi TUI sessions.",
   "type": "module",
   "engines": {

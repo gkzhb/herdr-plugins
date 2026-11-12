@@ -60,6 +60,8 @@ pi -e ./packages/pi-ntfy
 
 ## 哪些会话会通知
 
+启动时若存在 `BOTMUX` 环境变量（包括空值），整个插件直接禁用，不注册事件处理器，也不读取配置或发送 ntfy 通知。botmux 场景由飞书发送通知，避免重复提醒。
+
 1. 只允许 `ctx.mode === "tui"`，RPC / JSON / print 不通知。`hasUI` 不是主子判断依据，真正的 worker 也可能是 TUI。
 2. **每次拟通知时**同步查询 `pi.events.emit("shepherdr:worker-role:v1", { sessionManager: ctx.sessionManager, reply })`。任一 `true` 响应即跳过；使用当前 session manager，不缓存角色、不依赖扩展加载顺序。
 3. `false` 仅表示 Shepherdr 未将当前会话标记为 worker；无响应是 unknown，**不是已确认主 agent**。为支持独立 Pi，unknown TUI 默认允许通知。
